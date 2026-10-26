@@ -1,0 +1,42 @@
+class_name VelocityComponent
+extends Node
+
+@export_group("Movement Stats")
+@export var max_speed: float = 300.0
+@export var acceleration: float = 1800.0
+@export var friction: float = 2200.0
+
+var velocity: Vector2 = Vector2.ZERO
+var actor: CharacterBody2D
+
+
+func _ready() -> void:
+	# ค้นหา CharacterBody2D ที่เป็นเจ้าของ (Parent)
+	actor = get_parent() as CharacterBody2D
+
+
+## คำนวณความเร็วปกติ (รองรับอัตราเร่งและแรงเสียดทาน)
+func accelerate_to_direction(direction: Vector2, delta: float) -> void:
+	# ป้องกันการเดินทแยงแล้วได้สปีดแถม หากความยาวเกิน 1 ให้ normalize
+	if direction.length() > 1.0:
+		direction = direction.normalized()
+		
+	var target_velocity := direction * max_speed
+	
+	if direction != Vector2.ZERO:
+		velocity = velocity.move_toward(target_velocity, acceleration * delta)
+	else:
+		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
+
+
+## บังคับตั้งค่า Velocity ตรงๆ (เหมาะสำหรับ Dash, Knockback หรือ Impact)
+func set_instant_velocity(new_velocity: Vector2) -> void:
+	velocity = new_velocity
+
+
+## ดึง Actor มาขยับผ่าน move_and_slide()
+func apply_movement() -> void:
+	if actor:
+		actor.velocity = velocity
+		actor.move_and_slide()
+		velocity = actor.velocity # ซิงค์ค่ากลับเผื่อชนกำแพงแล้วหยุด

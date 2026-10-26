@@ -6,37 +6,27 @@ extends Node
 @export var acceleration: float = 1800.0
 @export var friction: float = 2200.0
 
-var velocity: Vector2 = Vector2.ZERO
-var actor: CharacterBody2D
+var current_velocity: Vector2 = Vector2.ZERO
 
-
-func _ready() -> void:
-	# ค้นหา CharacterBody2D ที่เป็นเจ้าของ (Parent)
-	actor = get_parent() as CharacterBody2D
-
-
-## คำนวณความเร็วปกติ (รองรับอัตราเร่งและแรงเสียดทาน)
-func accelerate_to_direction(direction: Vector2, delta: float) -> void:
-	# ป้องกันการเดินทแยงแล้วได้สปีดแถม หากความยาวเกิน 1 ให้ normalize
+## คำนวณความเร็วแบบมีแรงเฉื่อย
+func accelerate(direction: Vector2, delta: float) -> void:
 	if direction.length() > 1.0:
 		direction = direction.normalized()
 		
 	var target_velocity := direction * max_speed
 	
 	if direction != Vector2.ZERO:
-		velocity = velocity.move_toward(target_velocity, acceleration * delta)
+		current_velocity = current_velocity.move_toward(target_velocity, acceleration * delta)
 	else:
-		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
+		current_velocity = current_velocity.move_toward(Vector2.ZERO, friction * delta)
 
-
-## บังคับตั้งค่า Velocity ตรงๆ (เหมาะสำหรับ Dash, Knockback หรือ Impact)
+## สำหรับบีบบังคับความเร็วทันที (เช่น Dash หรือโดนผลัก)
 func set_instant_velocity(new_velocity: Vector2) -> void:
-	velocity = new_velocity
+	current_velocity = new_velocity
 
-
-## ดึง Actor มาขยับผ่าน move_and_slide()
-func apply_movement() -> void:
-	if actor:
-		actor.velocity = velocity
-		actor.move_and_slide()
-		velocity = actor.velocity # ซิงค์ค่ากลับเผื่อชนกำแพงแล้วหยุด
+## ส่งมอบความเร็วให้ CharacterBody2D นำไปเดิน
+func apply_to(body: CharacterBody2D) -> void:
+	body.velocity = current_velocity
+	body.move_and_slide()
+	# ซิงค์ค่ากลับเผื่อเดินชนกำแพงแล้วความเร็วกลายเป็น 0
+	current_velocity = body.velocity
